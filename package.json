@@ -4,7 +4,7 @@
   "description": "Smart onboarding CLI and MCP config manager for Business Central",
   "type": "module",
   "bin": {
-    "bc365": "./bin/bc365.js"
+    "bc365": "bin/bc365.js"
   },
   "exports": {
     ".": "./lib/index.js"
@@ -19,9 +19,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/habitusnet/mcp-d365-BC"
+    "url": "git+https://github.com/habitusnet/mcp-d365-BC.git"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
     "lint": "eslint lib/ bin/"
