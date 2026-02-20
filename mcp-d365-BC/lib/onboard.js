@@ -30,7 +30,7 @@ export function buildMcpConfig(ctx) {
       'bc-data': {
         type: 'stdio',
         command: 'npx',
-        args: ['-y', '@habitusnet/mcp-business-central'],
+        args: ['-y', '@knowall-ai/mcp-business-central'],
         env: {
           BC_URL_SERVER: `${BC_API_BASE}/${tenantId}/${envName}/api/v2.0`,
           BC_COMPANY: companyId,
