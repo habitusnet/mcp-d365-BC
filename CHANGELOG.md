@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.6] — 2026-02-20
+
+### Changed
+- README rewritten: two-command quick start, scope table, skills section, multi-tenant workflow, troubleshooting
+- SETUP.md updated: removed stale v1/`--output` references, updated multi-tenant section for `bc365 switch`
+
 ## [2.2.5] — 2026-02-20
 
 ### Changed
