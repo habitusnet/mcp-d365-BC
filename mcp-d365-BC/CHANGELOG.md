@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.7] — 2026-02-20
+
+### Added
+- `bc365 onboard --target claude-desktop` writes MCP servers directly into `claude_desktop_config.json`, merging with any existing config and preserving other keys
+- `bc365 switch <profile> --target claude-desktop` does the same from a saved profile
+- Both commands print "Restart Claude Desktop to apply changes." when using the claude-desktop target
+
 ## [2.2.6] — 2026-02-20
 
 ### Changed

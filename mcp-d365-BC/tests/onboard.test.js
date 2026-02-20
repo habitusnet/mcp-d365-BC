@@ -20,7 +20,14 @@ jest.unstable_mockModule('node:child_process', () => ({
   execFile: execFileMock,
 }));
 
-const { buildMcpConfig, onboard } = await import('../lib/onboard.js');
+const writeMock = jest.fn().mockResolvedValue(undefined);
+const readMock = jest.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+jest.unstable_mockModule('node:fs/promises', () => ({
+  readFile: readMock,
+  writeFile: writeMock,
+}));
+
+const { buildMcpConfig, onboard, registerWithClaudeDesktop, claudeDesktopConfigPath } = await import('../lib/onboard.js');
 const { getEnvironments, getCompanies, getPermissions } = await import('../lib/discovery.js');
 const { saveProfile } = await import('../lib/profiles.js');
 const inquirer = (await import('inquirer')).default;
@@ -45,10 +52,50 @@ describe('buildMcpConfig', () => {
   });
 });
 
+describe('registerWithClaudeDesktop', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    writeMock.mockResolvedValue(undefined);
+  });
+
+  test('merges mcpServers into existing config preserving other keys', async () => {
+    readMock.mockResolvedValueOnce(JSON.stringify({
+      preferences: { sidebarMode: 'task' },
+      mcpServers: { 'existing-server': { command: 'foo' } },
+    }));
+    const config = buildMcpConfig({ tenantId: 't1', envName: 'Production', companyId: 'c1' });
+    await registerWithClaudeDesktop(config);
+
+    const written = JSON.parse(writeMock.mock.calls[0][1]);
+    expect(written.preferences).toEqual({ sidebarMode: 'task' });
+    expect(written.mcpServers['existing-server']).toBeDefined();
+    expect(written.mcpServers['bc-data']).toBeDefined();
+    expect(written.mcpServers['bc-admin']).toBeDefined();
+  });
+
+  test('creates fresh config when file does not exist', async () => {
+    readMock.mockRejectedValueOnce(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+    const config = buildMcpConfig({ tenantId: 't1', envName: 'Production', companyId: 'c1' });
+    await registerWithClaudeDesktop(config);
+
+    const written = JSON.parse(writeMock.mock.calls[0][1]);
+    expect(written.mcpServers['bc-data']).toBeDefined();
+    expect(written.mcpServers['bc-admin']).toBeDefined();
+  });
+
+  test('writes to correct path for current platform', () => {
+    const p = claudeDesktopConfigPath();
+    expect(p).toContain('Claude');
+    expect(p).toMatch(/claude_desktop_config\.json$/);
+  });
+});
+
 describe('onboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     execFileMock.mockImplementation((cmd, args, cb) => cb(null, '', ''));
+    readMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+    writeMock.mockResolvedValue(undefined);
     saveProfile.mockResolvedValue(undefined);
   });
 
@@ -122,6 +169,24 @@ describe('onboard', () => {
     await expect(onboard({ tenantId: 'tenant-123' })).rejects.toThrow(
       'No Production environments found'
     );
+  });
+
+  test('writes to claude_desktop_config.json when target is claude-desktop', async () => {
+    getEnvironments.mockResolvedValue([
+      { name: 'Production', type: 'Production', aadTenantId: 'tenant-123' },
+    ]);
+    getCompanies.mockResolvedValue([{ id: 'co-guid', name: 'Contoso' }]);
+    getPermissions.mockResolvedValue({ present: [], missing: [] });
+
+    await onboard({ tenantId: 'tenant-123', target: 'claude-desktop' });
+
+    expect(execFileMock).not.toHaveBeenCalled();
+    expect(writeMock).toHaveBeenCalledTimes(1);
+    const [writtenPath, writtenContent] = writeMock.mock.calls[0];
+    expect(writtenPath).toContain('claude_desktop_config.json');
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.mcpServers['bc-data']).toBeDefined();
+    expect(parsed.mcpServers['bc-admin']).toBeDefined();
   });
 
   test('prints plugin install hint after registering servers', async () => {

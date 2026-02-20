@@ -1,4 +1,7 @@
 import { execFile as _execFile } from 'node:child_process';
+import { readFile, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
 import inquirer from 'inquirer';
 import { getToken } from './auth.js';
@@ -7,6 +10,13 @@ import { saveProfile } from './profiles.js';
 
 const execFile = promisify(_execFile);
 const BC_API_BASE = 'https://api.businesscentral.dynamics.com/v2.0';
+
+export function claudeDesktopConfigPath() {
+  if (process.platform === 'win32') {
+    return join(process.env.APPDATA, 'Claude', 'claude_desktop_config.json');
+  }
+  return join(homedir(), 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json');
+}
 
 export function buildMcpConfig(ctx) {
   const { tenantId, envName, companyId } = ctx;
@@ -31,8 +41,24 @@ export function buildMcpConfig(ctx) {
   };
 }
 
+export async function registerWithClaudeDesktop(config) {
+  const configPath = claudeDesktopConfigPath();
+  let existing = {};
+  try {
+    existing = JSON.parse(await readFile(configPath, 'utf8'));
+  } catch {
+    // file doesn't exist yet — start fresh
+  }
+  const merged = {
+    ...existing,
+    mcpServers: { ...(existing.mcpServers ?? {}), ...config.mcpServers },
+  };
+  await writeFile(configPath, JSON.stringify(merged, null, 2), 'utf8');
+  return configPath;
+}
+
 export async function onboard(options = {}) {
-  const { tenantId, scope = 'local', profileName } = options;
+  const { tenantId, scope = 'local', target = 'claude-code', profileName } = options;
   const token = await getToken();
 
   const environments = await getEnvironments(token, { tenantId, type: 'Production' });
@@ -68,10 +94,16 @@ export async function onboard(options = {}) {
   const ctx = { tenantId: selectedEnv.aadTenantId, envName, companyId };
   const config = buildMcpConfig(ctx);
 
-  for (const [name, serverConfig] of Object.entries(config.mcpServers)) {
-    await execFile('claude', ['mcp', 'add-json', '-s', scope, name, JSON.stringify(serverConfig)]);
+  if (target === 'claude-desktop') {
+    const configPath = await registerWithClaudeDesktop(config);
+    console.log(`✓ Wrote MCP servers to ${configPath}`);
+    console.log('Restart Claude Desktop to apply changes.');
+  } else {
+    for (const [name, serverConfig] of Object.entries(config.mcpServers)) {
+      await execFile('claude', ['mcp', 'add-json', '-s', scope, name, JSON.stringify(serverConfig)]);
+    }
+    console.log(`✓ Registered MCP servers (scope: ${scope})`);
   }
-  console.log(`✓ Registered MCP servers (scope: ${scope})`);
 
   const name = profileName ?? `${selectedEnv.aadTenantId}/${envName}`;
   await saveProfile(name, ctx);
