@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.3] — 2026-02-20
+
+### Changed
+- CHANGELOG backfilled for all v2.x releases
+
 ## [2.2.2] — 2026-02-20
 
 ### Changed
