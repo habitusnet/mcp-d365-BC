@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.4] — 2026-02-20
+
+### Fixed
+- `bc365 onboard --help` now shows `--scope` instead of the removed `--output` flag
+- `bc365 switch` now re-registers MCP servers via `claude mcp add-json -s <scope>` instead of writing `.mcp.json`; accepts the same `--scope` option as `onboard`
+
 ## [2.2.3] — 2026-02-20
 
 ### Changed
