@@ -2,7 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0] — Unreleased
+## [2.2.1] — 2026-02-20
+
+### Changed
+- `bc365 onboard` skill sync: bundled `skills/bc-query/SKILL.md` now includes `$expand` pattern for sales/purchase order lines and invoice lines
+
+## [2.2.0] — 2026-02-20
+
+### Changed
+- `bc365 onboard` now registers MCP servers via `claude mcp add-json -s local` instead of writing `.mcp.json`; servers land in `.claude/settings.local.json` (gitignored, per-user) and appear in `claude mcp list`
+- New `scope` option (default: `'local'`); pass `scope: 'project'` to restore the old `.mcp.json` behaviour
+- CI: `npm audit` now scoped to production dependencies (`--omit=dev`) to ignore test-tool advisories
+
+## [2.1.0] — 2026-02-20
+
+### Added
+- Claude Code skill bundle: `skills/bc-query`, `skills/bc-admin`, `skills/bc-diagnose` bundled in the npm package
+- `bc365 onboard` prints install hint: `claude plugin install habitusnet/bc365-skills`
+- Companion plugin repo `habitusnet/bc365-skills` with sync CI (auto-opens PR on this repo when skills change)
+
+## [2.0.0] — 2026-02-20
 
 ### Added
 - `bc365 onboard` CLI: auto-discovers tenant, environments, companies via Entra ID device code flow, writes `.mcp.json`
