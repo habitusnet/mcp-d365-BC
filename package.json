@@ -1,6 +1,6 @@
 {
   "name": "@habitusnet/bc365",
-  "version": "2.2.7",
+  "version": "2.2.8",
   "description": "Smart onboarding CLI and MCP config manager for Business Central",
   "type": "module",
   "bin": {

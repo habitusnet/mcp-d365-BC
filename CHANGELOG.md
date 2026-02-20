@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.8] — 2026-02-20
+
+### Fixed
+- `bc-data` MCP server now references `@knowall-ai/mcp-business-central` (the published npm package) instead of `@habitusnet/mcp-business-central` which was a GitHub-only mirror and caused a 404 on every Claude Desktop startup
+
 ## [2.2.7] — 2026-02-20
 
 ### Added
