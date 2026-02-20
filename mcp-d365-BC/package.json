@@ -17,6 +17,10 @@
     "README.md",
     "CHANGELOG.md"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/habitusnet/mcp-d365-BC"
+  },
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
