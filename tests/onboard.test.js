@@ -15,10 +15,9 @@ jest.unstable_mockModule('inquirer', () => ({
   default: { prompt: jest.fn() },
 }));
 
-const writeMock = jest.fn().mockResolvedValue(undefined);
-jest.unstable_mockModule('node:fs/promises', () => ({
-  writeFile: writeMock,
-  readFile: jest.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })),
+const execFileMock = jest.fn((cmd, args, cb) => cb(null, '', ''));
+jest.unstable_mockModule('node:child_process', () => ({
+  execFile: execFileMock,
 }));
 
 const { buildMcpConfig, onboard } = await import('../lib/onboard.js');
@@ -49,31 +48,60 @@ describe('buildMcpConfig', () => {
 describe('onboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    writeMock.mockResolvedValue(undefined);
+    execFileMock.mockImplementation((cmd, args, cb) => cb(null, '', ''));
     saveProfile.mockResolvedValue(undefined);
   });
 
-  test('writes .mcp.json when single env and company (no prompts needed)', async () => {
+  test('registers both MCP servers via claude mcp add-json with local scope', async () => {
     getEnvironments.mockResolvedValue([
       { name: 'Production', type: 'Production', aadTenantId: 'tenant-123' },
     ]);
     getCompanies.mockResolvedValue([{ id: 'co-guid', name: 'Contoso' }]);
     getPermissions.mockResolvedValue({ present: ['D365 BUS FULL ACCESS'], missing: [] });
 
-    await onboard({ tenantId: 'tenant-123', output: '.mcp.json' });
+    await onboard({ tenantId: 'tenant-123' });
 
-    expect(writeMock).toHaveBeenCalledWith(
-      '.mcp.json',
-      expect.stringContaining('bc-data'),
-      'utf8'
-    );
+    expect(execFileMock).toHaveBeenCalledTimes(2);
+    const calls = execFileMock.mock.calls;
+
+    // Both calls use claude mcp add-json -s local
+    for (const [cmd, args] of calls) {
+      expect(cmd).toBe('claude');
+      expect(args).toContain('add-json');
+      expect(args).toContain('-s');
+      expect(args).toContain('local');
+    }
+
+    // Server names are passed as the fourth arg (after add-json -s local)
+    const serverNames = calls.map(([, args]) => args[args.indexOf('local') + 1]);
+    expect(serverNames).toContain('bc-admin');
+    expect(serverNames).toContain('bc-data');
+
+    // bc-data JSON contains the tenant
+    const dataCall = calls.find(([, args]) => args.includes('bc-data'));
+    const dataJson = JSON.parse(dataCall[1].at(-1));
+    expect(dataJson.env.BC_URL_SERVER).toContain('tenant-123');
+
     // Should NOT prompt when there's only one option
     expect(inquirer.prompt).not.toHaveBeenCalled();
-    // Should save profile after writing config
+    // Should save profile
     expect(saveProfile).toHaveBeenCalledWith(
       expect.stringContaining('tenant-123'),
       expect.objectContaining({ tenantId: 'tenant-123', envName: 'Production', companyId: 'co-guid' })
     );
+  });
+
+  test('respects custom scope option', async () => {
+    getEnvironments.mockResolvedValue([
+      { name: 'Production', type: 'Production', aadTenantId: 'tenant-123' },
+    ]);
+    getCompanies.mockResolvedValue([{ id: 'co-guid', name: 'Contoso' }]);
+    getPermissions.mockResolvedValue({ present: [], missing: [] });
+
+    await onboard({ tenantId: 'tenant-123', scope: 'project' });
+
+    const calls = execFileMock.mock.calls;
+    expect(calls.every(([, args]) => args.includes('project'))).toBe(true);
   });
 
   test('prompts for env when multiple environments exist', async () => {
@@ -85,7 +113,7 @@ describe('onboard', () => {
     getPermissions.mockResolvedValue({ present: ['D365 BUS FULL ACCESS'], missing: [] });
     inquirer.prompt.mockResolvedValueOnce({ envName: 'Production' });
 
-    await onboard({ tenantId: 'tenant-123', output: '.mcp.json' });
+    await onboard({ tenantId: 'tenant-123' });
     expect(inquirer.prompt).toHaveBeenCalledTimes(1);
   });
 
@@ -96,7 +124,7 @@ describe('onboard', () => {
     );
   });
 
-  test('prints plugin install hint after writing config', async () => {
+  test('prints plugin install hint after registering servers', async () => {
     getEnvironments.mockResolvedValue([
       { name: 'Production', type: 'Production', aadTenantId: 'tenant-123' },
     ]);
@@ -104,7 +132,7 @@ describe('onboard', () => {
     getPermissions.mockResolvedValue({ present: ['D365 BUS FULL ACCESS'], missing: [] });
 
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-    await onboard({ tenantId: 'tenant-123', output: '.mcp.json' });
+    await onboard({ tenantId: 'tenant-123' });
 
     const calls = consoleSpy.mock.calls.map(c => c[0]);
     consoleSpy.mockRestore();
