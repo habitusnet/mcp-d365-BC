@@ -3,43 +3,45 @@
 ## Prerequisites
 
 - Node.js ≥ 20
+- [Claude Code](https://docs.anthropic.com/claude-code) installed
 - A Microsoft 365 tenant with Business Central
 - `D365 BUS FULL ACCESS` permission in Business Central
 
-## Quick Onboard (v2)
+## Quick Start
 
 ```bash
-npx @habitusnet/bc365 onboard
+npm install -g @habitusnet/bc365
+bc365 onboard
+claude plugin install habitusnet/bc365-skills
 ```
 
-Follow the device code flow: open the URL displayed in your terminal, enter the code, and sign in with your Microsoft account. The CLI will auto-discover your tenant, environments, and companies.
+Follow the device code flow: the CLI prints a URL — open it, enter the code, and sign in with your Microsoft account. It will auto-discover your tenant, environments, and companies, then register both MCP servers with Claude Code.
 
-## Manual Setup (v1 style)
+## Scope Options
 
-Copy `.mcp.json.example` to `.mcp.json` and fill in your values:
+By default `bc365 onboard` registers servers at **local scope** (`.claude/settings.local.json`, gitignored). To share config with your team, use project scope:
 
 ```bash
-cp .mcp.json.example .mcp.json
-# Edit .mcp.json with your tenant ID, company GUID, and environment name
+bc365 onboard --scope project   # writes .mcp.json — commit this to git
 ```
-
-See [.mcp.json.example](.mcp.json.example) for the template.
 
 ## Multi-Tenant Usage (Agencies)
 
-After onboarding for a client, save their profile:
+Each `onboard` run saves a named profile. Switch between clients without re-authenticating:
 
 ```bash
-bc365 onboard --output /tmp/client-a-config.json
-# Manually copy to .mcp.json, then save profile:
-cp /tmp/client-a-config.json .mcp.json
-```
+# First client — profile saved automatically as <tenantId>/<envName>
+bc365 onboard
 
-Switch between client profiles:
+# Onboard a second client
+bc365 onboard
 
-```bash
-bc365 profiles          # list saved profiles
-bc365 switch client-a   # write client-a's config to .mcp.json
+# List all profiles
+bc365 profiles
+
+# Switch to a different client (re-registers MCP servers)
+bc365 switch <profile-name>
+bc365 switch <profile-name> --scope project   # re-register at project scope
 ```
 
 ## Check Package Versions
@@ -48,14 +50,14 @@ bc365 switch client-a   # write client-a's config to .mcp.json
 bc365 check
 ```
 
-Shows the latest published versions of all bc365-related packages from npm.
+Shows the latest published version of `@habitusnet/bc365` from npm.
 
 ## Permission Errors
 
-If onboarding warns about missing permissions, ask your BC admin to assign:
+If onboarding warns about missing permissions, ask your BC admin to assign the permission set in the BC UI (Settings → Users → select user → Permission Sets):
 
-- Permission set: `D365 BUS FULL ACCESS`
-- Or: `SUPER` (full access — development/sandbox only)
+- `D365 BUS FULL ACCESS` — general read/write (recommended)
+- `SUPER` — full access (development/sandbox only)
 
 ## Required Entra ID Permissions
 
@@ -63,4 +65,4 @@ The `bc365 CLI` Azure app requires:
 - **Microsoft Dynamics ERP** → `user_impersonation` (delegated)
 - **Microsoft Graph** → `User.Read` + `Directory.Read.All` (delegated)
 
-Users consent on first sign-in (no admin pre-consent required for most tenants).
+Users consent on first sign-in — no admin pre-consent required for most tenants.

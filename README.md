@@ -1,103 +1,149 @@
-# bc365 — MCP Config Manager for Business Central
+# bc365
 
-`@habitusnet/bc365` is a CLI that connects Claude Code to Microsoft Dynamics 365 Business Central — auto-discovering your environments, registering MCP servers, and installing BC-aware Claude skills.
-
-## Quick Start
+> Connect Claude Code to Microsoft Dynamics 365 Business Central in two commands.
 
 ```bash
 npx @habitusnet/bc365 onboard
-```
-
-Sign in with your Microsoft account. The CLI discovers your tenant, environments, and companies automatically, checks your BC permissions, and registers both MCP servers with Claude Code.
-
-Then install the Claude Code skill bundle:
-
-```bash
 claude plugin install habitusnet/bc365-skills
 ```
 
-**Prerequisites:**
-- Claude Code installed (`npm install -g @anthropic-ai/claude-code`)
-- Microsoft 365 / Azure AD account with access to Business Central
-- Business Central environment with `D365 BUS FULL ACCESS` permission set
+---
+
+## What It Does
+
+`bc365 onboard` signs you in with Microsoft, discovers your BC environments and companies, and registers two MCP servers directly with Claude Code:
+
+| MCP Server | Purpose |
+|------------|---------|
+| `bc-data` | Read and write BC data — customers, items, orders, G/L entries via OData |
+| `bc-admin` | Manage environments, apps, feature flags, and user sessions |
+
+`claude plugin install habitusnet/bc365-skills` adds three Claude skills that tell Claude how to use those servers effectively.
+
+---
+
+## Prerequisites
+
+- [Claude Code](https://docs.anthropic.com/claude-code) installed
+- Node.js ≥ 20
+- Microsoft 365 account with access to Business Central
+- `D365 BUS FULL ACCESS` permission set in BC
 
 ---
 
 ## Installation
 
+### Global install (recommended)
+
 ```bash
 npm install -g @habitusnet/bc365
+bc365 onboard
 ```
 
-Or use without installing:
+### One-off (no install)
 
 ```bash
 npx @habitusnet/bc365 onboard
 ```
 
-## What `bc365 onboard` Does
+---
 
-1. Opens a Microsoft device code login in your browser
-2. Discovers your BC environments and companies
-3. Checks your permission sets
-4. Registers two MCP servers with Claude Code (`claude mcp add-json -s local`):
-   - **`bc-data`** — query and update BC data via OData (customers, items, orders, G/L entries)
-   - **`bc-admin`** — manage environments, apps, feature flags, and sessions
+## Onboarding
 
-Servers are registered at local scope (`.claude/settings.local.json`, gitignored and per-user). Pass `--scope` to override:
+```bash
+bc365 onboard
+```
+
+1. A device code URL is printed — open it in your browser and sign in with your Microsoft account
+2. The CLI discovers your tenant, environments, and companies
+3. Checks your BC permission sets and warns if anything is missing
+4. Registers `bc-data` and `bc-admin` with Claude Code
+
+Servers are registered at **local scope** by default — stored in `.claude/settings.local.json`, gitignored, per-user. Use `--scope` to change this:
 
 | Scope | Stored in | Use when |
 |-------|-----------|----------|
-| `local` (default) | `.claude/settings.local.json` | Per-user, gitignored — recommended |
+| `local` *(default)* | `.claude/settings.local.json` | Per-user, gitignored — recommended |
 | `user` | `~/.claude.json` | All projects for this user |
 | `project` | `.mcp.json` | Shared team config, committed to git |
 
 ```bash
-bc365 onboard                        # local scope (default)
-bc365 onboard --scope project        # writes .mcp.json
-bc365 switch habitusnet-prod         # re-register saved profile at local scope
-bc365 switch habitusnet-prod --scope user  # re-register at user scope
+bc365 onboard                   # local scope (default)
+bc365 onboard --scope project   # writes .mcp.json for the whole team
 ```
 
-## Claude Code Skills
-
-After onboarding, install the companion skill bundle:
+After onboarding, install the skill bundle:
 
 ```bash
 claude plugin install habitusnet/bc365-skills
 ```
 
-This gives Claude three skills:
+---
 
-| Skill | Description |
-|-------|-------------|
-| `bc-query` | Query and update BC data — OData filters, expand for line items, pagination |
-| `bc-admin` | Manage environments, apps, feature flags, sessions |
-| `bc-diagnose` | Interpret BC HTTP/OData errors and suggest fixes |
+## Claude Skills
 
-Skills are also bundled in this package under `skills/` for offline use.
+The [`habitusnet/bc365-skills`](https://github.com/habitusnet/bc365-skills) plugin teaches Claude how to use the MCP servers:
 
-## Commands
+| Skill | What it covers |
+|-------|----------------|
+| `bc-query` | OData filters, `$expand` for line items, pagination, write operations |
+| `bc-admin` | Environment inspection, app update workflow, feature flags, session management |
+| `bc-diagnose` | HTTP/OData error interpretation, permission set reference, diagnostic workflow |
+
+Skills are also bundled in this package under `skills/` for offline access.
+
+---
+
+## Multi-Tenant Usage (Agencies)
+
+Each `bc365 onboard` run saves a profile. Switch between clients without re-authenticating:
+
+```bash
+# Onboard client A (saves profile automatically)
+bc365 onboard
+
+# Later: switch to client B
+bc365 switch client-b-profile
+
+# List all saved profiles
+bc365 profiles
+```
+
+`bc365 switch` accepts the same `--scope` flag as `onboard`.
+
+---
+
+## All Commands
 
 | Command | Description |
 |---------|-------------|
-| `bc365 onboard [-s local\|user\|project]` | Discover and register MCP servers |
+| `bc365 onboard [-s local\|user\|project]` | Discover tenant/env/company and register MCP servers |
 | `bc365 switch <profile> [-s local\|user\|project]` | Re-register servers from a saved profile |
 | `bc365 profiles` | List saved profiles |
 | `bc365 check` | Check latest npm versions of bc365 packages |
 
-## Multi-Tenant Usage
-
-For agencies managing multiple clients, see [SETUP.md](SETUP.md#multi-tenant-usage-agencies).
+---
 
 ## MCP Servers
 
-| Server | Package | Purpose |
-|--------|---------|---------|
-| `bc-data` | [`@habitusnet/mcp-business-central`](https://github.com/habitusnet/mcp-business-central) | OData read/write on BC entities |
-| `bc-admin` | [`habitusnet/d365bc-admin-mcp`](https://github.com/habitusnet/d365bc-admin-mcp) | BC Admin Center API |
+Both servers are vendored mirrors with daily upstream sync and security scanning:
 
-Both are vendored mirrors with daily upstream sync and security scanning.
+| Server | Upstream | npm command |
+|--------|----------|-------------|
+| `bc-admin` | [`habitusnet/d365bc-admin-mcp`](https://github.com/habitusnet/d365bc-admin-mcp) | `d365bc-admin-mcp` |
+| `bc-data` | [`habitusnet/mcp-business-central`](https://github.com/habitusnet/mcp-business-central) | `npx @habitusnet/mcp-business-central` |
+
+---
+
+## Troubleshooting
+
+**Auth errors (`401`)** — run `az login` to refresh Azure CLI credentials, or re-run `bc365 onboard`.
+
+**Missing permissions warning** — ask your BC admin to assign `D365 BUS FULL ACCESS` in Settings → Users → Permission Sets.
+
+**`claude: command not found`** — Claude Code must be installed and on your PATH before running `bc365 onboard`.
+
+---
 
 ## License
 
