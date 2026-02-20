@@ -95,4 +95,21 @@ describe('onboard', () => {
       'No Production environments found'
     );
   });
+
+  test('prints plugin install hint after writing config', async () => {
+    getEnvironments.mockResolvedValue([
+      { name: 'Production', type: 'Production', aadTenantId: 'tenant-123' },
+    ]);
+    getCompanies.mockResolvedValue([{ id: 'co-guid', name: 'Contoso' }]);
+    getPermissions.mockResolvedValue({ present: ['D365 BUS FULL ACCESS'], missing: [] });
+
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    await onboard({ tenantId: 'tenant-123', output: '.mcp.json' });
+
+    const calls = consoleSpy.mock.calls.map(c => c[0]);
+    consoleSpy.mockRestore();
+
+    expect(calls.some(m => m.includes('claude plugin install'))).toBe(true);
+    expect(calls.some(m => m.includes('habitusnet/bc365-skills'))).toBe(true);
+  });
 });

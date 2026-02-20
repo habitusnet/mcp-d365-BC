@@ -71,4 +71,5 @@ export async function onboard(options = {}) {
   const name = profileName ?? `${selectedEnv.aadTenantId}/${envName}`;
   await saveProfile(name, ctx);
   console.log(`✓ Saved profile '${name}'`);
+  console.log(`\nTo get BC-aware Claude skills, run:\n  claude plugin install habitusnet/bc365-skills`);
 }
