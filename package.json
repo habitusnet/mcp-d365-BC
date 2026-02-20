@@ -1,0 +1,40 @@
+{
+  "name": "@habitusnet/bc365",
+  "version": "2.1.0",
+  "description": "Smart onboarding CLI and MCP config manager for Business Central",
+  "type": "module",
+  "bin": {
+    "bc365": "./bin/bc365.js"
+  },
+  "exports": {
+    ".": "./lib/index.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "skills/",
+    "commands/",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/habitusnet/mcp-d365-BC"
+  },
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
+    "lint": "eslint lib/ bin/"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^2.15.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "inquirer": "^10.1.5",
+    "keytar": "^7.9.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
