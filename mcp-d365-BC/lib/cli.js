@@ -1,24 +1,29 @@
+import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { onboard } from './onboard.js';
 import { listProfiles, loadProfile } from './profiles.js';
 import { checkVersions } from './versions.js';
 
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json');
+
 export const program = new Command();
 
 program
   .name('bc365')
   .description('Business Central MCP onboarding and management CLI')
-  .version('2.0.0');
+  .version(version);
 
 program
   .command('onboard')
   .description('Auto-discover tenant/environment/company and write .mcp.json')
   .option('-t, --tenant-id <id>', 'Azure AD tenant ID (skip Graph lookup)')
   .option('-o, --output <path>', 'Output path for .mcp.json', '.mcp.json')
+  .option('-p, --profile <name>', 'Profile name to save (default: tenantId/envName)')
   .action(async (opts) => {
     try {
-      await onboard({ tenantId: opts.tenantId, output: opts.output });
+      await onboard({ tenantId: opts.tenantId, output: opts.output, profileName: opts.profile });
     } catch (err) {
       console.error(chalk.red(`✗ ${err.message}`));
       process.exit(1);
@@ -30,16 +35,21 @@ program
   .description('Switch active profile (writes .mcp.json from saved profile)')
   .option('-o, --output <path>', 'Output path', '.mcp.json')
   .action(async (profileName, opts) => {
-    const profile = await loadProfile(profileName);
-    if (!profile) {
-      console.error(chalk.red(`✗ Profile '${profileName}' not found. Run 'bc365 onboard' first.`));
+    try {
+      const profile = await loadProfile(profileName);
+      if (!profile) {
+        console.error(chalk.red(`✗ Profile '${profileName}' not found. Run 'bc365 onboard' first.`));
+        process.exit(1);
+      }
+      const { writeFile } = await import('node:fs/promises');
+      const { buildMcpConfig } = await import('./onboard.js');
+      const config = buildMcpConfig(profile);
+      await writeFile(opts.output, JSON.stringify(config, null, 2), 'utf8');
+      console.log(chalk.green(`✓ Switched to profile '${profileName}'`));
+    } catch (err) {
+      console.error(chalk.red(`✗ ${err.message}`));
       process.exit(1);
     }
-    const { writeFile } = await import('node:fs/promises');
-    const { buildMcpConfig } = await import('./onboard.js');
-    const config = buildMcpConfig(profile);
-    await writeFile(opts.output, JSON.stringify(config, null, 2), 'utf8');
-    console.log(chalk.green(`✓ Switched to profile '${profileName}'`));
   });
 
 program

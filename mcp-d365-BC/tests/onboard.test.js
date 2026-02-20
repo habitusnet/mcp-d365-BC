@@ -8,6 +8,9 @@ jest.unstable_mockModule('../lib/discovery.js', () => ({
   getCompanies: jest.fn(),
   getPermissions: jest.fn(),
 }));
+jest.unstable_mockModule('../lib/profiles.js', () => ({
+  saveProfile: jest.fn().mockResolvedValue(undefined),
+}));
 jest.unstable_mockModule('inquirer', () => ({
   default: { prompt: jest.fn() },
 }));
@@ -20,6 +23,7 @@ jest.unstable_mockModule('node:fs/promises', () => ({
 
 const { buildMcpConfig, onboard } = await import('../lib/onboard.js');
 const { getEnvironments, getCompanies, getPermissions } = await import('../lib/discovery.js');
+const { saveProfile } = await import('../lib/profiles.js');
 const inquirer = (await import('inquirer')).default;
 
 describe('buildMcpConfig', () => {
@@ -46,6 +50,7 @@ describe('onboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     writeMock.mockResolvedValue(undefined);
+    saveProfile.mockResolvedValue(undefined);
   });
 
   test('writes .mcp.json when single env and company (no prompts needed)', async () => {
@@ -64,6 +69,11 @@ describe('onboard', () => {
     );
     // Should NOT prompt when there's only one option
     expect(inquirer.prompt).not.toHaveBeenCalled();
+    // Should save profile after writing config
+    expect(saveProfile).toHaveBeenCalledWith(
+      expect.stringContaining('tenant-123'),
+      expect.objectContaining({ tenantId: 'tenant-123', envName: 'Production', companyId: 'co-guid' })
+    );
   });
 
   test('prompts for env when multiple environments exist', async () => {

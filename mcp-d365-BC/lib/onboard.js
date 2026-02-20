@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises';
 import inquirer from 'inquirer';
 import { getToken } from './auth.js';
 import { getEnvironments, getCompanies, getPermissions } from './discovery.js';
+import { saveProfile } from './profiles.js';
 
 const BC_API_BASE = 'https://api.businesscentral.dynamics.com/v2.0';
 
@@ -29,7 +30,7 @@ export function buildMcpConfig(ctx) {
 }
 
 export async function onboard(options = {}) {
-  const { tenantId, output = '.mcp.json' } = options;
+  const { tenantId, output = '.mcp.json', profileName } = options;
   const token = await getToken();
 
   const environments = await getEnvironments(token, { tenantId, type: 'Production' });
@@ -62,7 +63,12 @@ export async function onboard(options = {}) {
     console.warn(`⚠️  Missing permissions: ${perms.missing.join(', ')}`);
   }
 
-  const config = buildMcpConfig({ tenantId: selectedEnv.aadTenantId, envName, companyId });
+  const ctx = { tenantId: selectedEnv.aadTenantId, envName, companyId };
+  const config = buildMcpConfig(ctx);
   await writeFile(output, JSON.stringify(config, null, 2), 'utf8');
   console.log(`✓ Wrote ${output}`);
+
+  const name = profileName ?? `${selectedEnv.aadTenantId}/${envName}`;
+  await saveProfile(name, ctx);
+  console.log(`✓ Saved profile '${name}'`);
 }

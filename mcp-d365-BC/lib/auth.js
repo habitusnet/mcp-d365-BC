@@ -8,7 +8,6 @@ const AUTHORITY = 'https://login.microsoftonline.com/organizations';
 const SCOPES = [
   'https://api.businesscentral.dynamics.com/user_impersonation',
   'User.Read',
-  'Directory.Read.All',
 ];
 
 // Lazy PCA creation so tests can control the mock per-call via
@@ -22,8 +21,12 @@ function createPca() {
 export async function getToken() {
   const cached = await keytar.getPassword(SERVICE, ACCOUNT);
   if (cached) {
-    const parsed = JSON.parse(cached);
-    if (parsed.expiresOn > Date.now() + 60_000) return parsed;
+    try {
+      const parsed = JSON.parse(cached);
+      if (parsed.expiresOn > Date.now() + 60_000) return parsed;
+    } catch {
+      // Corrupt cache — fall through to re-authenticate
+    }
   }
 
   const pca = createPca();

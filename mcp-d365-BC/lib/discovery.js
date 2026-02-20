@@ -21,14 +21,14 @@ export async function getEnvironments(token, opts = {}) {
 }
 
 export async function getCompanies(env, token) {
-  const url = `${BC_API_BASE}/${env.aadTenantId}/${env.name}/api/v2.0/companies`;
+  const url = `${BC_API_BASE}/${encodeURIComponent(env.aadTenantId)}/${encodeURIComponent(env.name)}/api/v2.0/companies`;
   const data = await bcFetch(url, token);
   return data.value ?? [];
 }
 
 export async function getPermissions(env, token, opts = {}) {
   const { companyId } = opts;
-  const url = `${BC_API_BASE}/${env.aadTenantId}/${env.name}/api/v2.0/companies(${companyId})/userPermissions`;
+  const url = `${BC_API_BASE}/${encodeURIComponent(env.aadTenantId)}/${encodeURIComponent(env.name)}/api/v2.0/companies(${encodeURIComponent(companyId)})/userPermissions`;
   const data = await bcFetch(url, token);
   const grantedRoles = (data.value ?? []).map((p) => p.roleId);
   return {
