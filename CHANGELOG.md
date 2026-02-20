@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.5] — 2026-02-20
+
+### Changed
+- README: documents `--scope` flag with reference table and examples for `onboard` and `switch`
+
 ## [2.2.4] — 2026-02-20
 
 ### Fixed
