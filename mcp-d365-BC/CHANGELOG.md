@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.2] — 2026-02-20
+
+### Changed
+- README rewritten to reflect v2.2 — documents `claude mcp add-json` registration, skills bundle, `--scope` option, and MCP server table
+
 ## [2.2.1] — 2026-02-20
 
 ### Changed
