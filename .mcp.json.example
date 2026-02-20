@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "bc-admin": {
+      "type": "stdio",
+      "command": "d365bc-admin-mcp",
+      "description": "Business Central environment administration — 33 tools for managing BC environments, installing apps, uploading PTEs, managing sessions, and configuring update windows. Authenticates via Microsoft Entra ID (browser popup on first use, tokens cached 50 min)."
+    },
+    "bc-data": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@knowall-ai/mcp-business-central"],
+      "env": {
+        "BC_URL_SERVER": "https://api.businesscentral.dynamics.com/v2.0/YOUR_TENANT_ID/Production/api/v2.0",
+        "BC_COMPANY": "YOUR_COMPANY_GUID",
+        "BC_AUTH_TYPE": "azure_cli"
+      },
+      "description": "Business Central OData v4 data access — CRUD on any BC entity (customers, vendors, items, invoices, G/L entries, etc.). Authenticates via Azure CLI (az login) or service principal env vars."
+    }
+  }
+}

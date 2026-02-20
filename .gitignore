@@ -1,0 +1,10 @@
+# MCP server config — use .mcp.json.example as template; never commit real config
+.mcp.json
+.mcp.json.local
+
+# Runtime / OS
+.DS_Store
+*.log
+
+# Node (for any future tooling)
+node_modules/
