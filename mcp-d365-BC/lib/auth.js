@@ -3,7 +3,7 @@ import keytar from 'keytar';
 
 const SERVICE = 'bc365';
 const ACCOUNT = 'token';
-const CLIENT_ID = process.env.BC365_CLIENT_ID ?? 'YOUR_CLIENT_ID';
+const CLIENT_ID = process.env.BC365_CLIENT_ID ?? 'e9dd228a-569c-4ab2-8e0a-cda6b01555d9';
 const AUTHORITY = 'https://login.microsoftonline.com/organizations';
 const SCOPES = [
   'https://api.businesscentral.dynamics.com/user_impersonation',
