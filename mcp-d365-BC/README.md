@@ -44,7 +44,20 @@ npx @habitusnet/bc365 onboard
    - **`bc-data`** — query and update BC data via OData (customers, items, orders, G/L entries)
    - **`bc-admin`** — manage environments, apps, feature flags, and sessions
 
-Servers are registered at local scope (`.claude/settings.local.json`, gitignored and per-user). Run with `--scope project` to write a shared `.mcp.json` instead.
+Servers are registered at local scope (`.claude/settings.local.json`, gitignored and per-user). Pass `--scope` to override:
+
+| Scope | Stored in | Use when |
+|-------|-----------|----------|
+| `local` (default) | `.claude/settings.local.json` | Per-user, gitignored — recommended |
+| `user` | `~/.claude.json` | All projects for this user |
+| `project` | `.mcp.json` | Shared team config, committed to git |
+
+```bash
+bc365 onboard                        # local scope (default)
+bc365 onboard --scope project        # writes .mcp.json
+bc365 switch habitusnet-prod         # re-register saved profile at local scope
+bc365 switch habitusnet-prod --scope user  # re-register at user scope
+```
 
 ## Claude Code Skills
 
@@ -68,9 +81,9 @@ Skills are also bundled in this package under `skills/` for offline use.
 
 | Command | Description |
 |---------|-------------|
-| `bc365 onboard [--scope local\|project]` | Discover and register MCP servers |
+| `bc365 onboard [-s local\|user\|project]` | Discover and register MCP servers |
+| `bc365 switch <profile> [-s local\|user\|project]` | Re-register servers from a saved profile |
 | `bc365 profiles` | List saved profiles |
-| `bc365 switch <profile>` | Switch to a saved profile |
 | `bc365 check` | Check latest npm versions of bc365 packages |
 
 ## Multi-Tenant Usage
