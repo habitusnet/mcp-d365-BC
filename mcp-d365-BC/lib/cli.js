@@ -17,13 +17,13 @@ program
 
 program
   .command('onboard')
-  .description('Auto-discover tenant/environment/company and write .mcp.json')
+  .description('Auto-discover tenant/environment/company and register MCP servers with Claude Code')
   .option('-t, --tenant-id <id>', 'Azure AD tenant ID (skip Graph lookup)')
-  .option('-o, --output <path>', 'Output path for .mcp.json', '.mcp.json')
+  .option('-s, --scope <scope>', 'Configuration scope: local, user, or project (default: local)', 'local')
   .option('-p, --profile <name>', 'Profile name to save (default: tenantId/envName)')
   .action(async (opts) => {
     try {
-      await onboard({ tenantId: opts.tenantId, output: opts.output, profileName: opts.profile });
+      await onboard({ tenantId: opts.tenantId, scope: opts.scope, profileName: opts.profile });
     } catch (err) {
       console.error(chalk.red(`✗ ${err.message}`));
       process.exit(1);
@@ -32,8 +32,8 @@ program
 
 program
   .command('switch <profile>')
-  .description('Switch active profile (writes .mcp.json from saved profile)')
-  .option('-o, --output <path>', 'Output path', '.mcp.json')
+  .description('Switch active profile (re-registers MCP servers from saved profile)')
+  .option('-s, --scope <scope>', 'Configuration scope: local, user, or project (default: local)', 'local')
   .action(async (profileName, opts) => {
     try {
       const profile = await loadProfile(profileName);
@@ -41,11 +41,15 @@ program
         console.error(chalk.red(`✗ Profile '${profileName}' not found. Run 'bc365 onboard' first.`));
         process.exit(1);
       }
-      const { writeFile } = await import('node:fs/promises');
+      const { execFile: _execFile } = await import('node:child_process');
+      const { promisify } = await import('node:util');
+      const execFile = promisify(_execFile);
       const { buildMcpConfig } = await import('./onboard.js');
       const config = buildMcpConfig(profile);
-      await writeFile(opts.output, JSON.stringify(config, null, 2), 'utf8');
-      console.log(chalk.green(`✓ Switched to profile '${profileName}'`));
+      for (const [name, serverConfig] of Object.entries(config.mcpServers)) {
+        await execFile('claude', ['mcp', 'add-json', '-s', opts.scope, name, JSON.stringify(serverConfig)]);
+      }
+      console.log(chalk.green(`✓ Switched to profile '${profileName}' (scope: ${opts.scope})`));
     } catch (err) {
       console.error(chalk.red(`✗ ${err.message}`));
       process.exit(1);
